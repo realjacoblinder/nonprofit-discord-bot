@@ -6,6 +6,7 @@ import asyncio
 from datetime import datetime
 import requests
 import urllib.parse
+from money import Money
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -51,9 +52,9 @@ async def ein_search(ctx, ein: int):
         elif item['formtype'] == 1: data[new_key]['Form'] = '990_EZ'
         elif item['formtype'] == 2: data[new_key]['Form'] = '990-PF'
         else: data[new_key]['Form'] = 'Unknown'
-        data[new_key]['Revenue'] = item['totrevenue']
-        data[new_key]['Expenses'] = item['totfuncexpns']
-        data[new_key]['Liabilities'] = item['totliabend']
+        data[new_key]['Revenue'] = Money(item['totrevenue'],'USD').format('en_US')
+        data[new_key]['Expenses'] = Money(item['totfuncexpns'],'USD').format('en_US')
+        data[new_key]['Liabilities'] = Money(item['totliabend'],'USD').format('en_US')
         data[new_key]['PDF'] = item['pdf_url'] if item['pdf_url'] else "Unavailable"
     for item in results['filings_without_data']:
         new_key = item['tax_prd']
@@ -62,17 +63,21 @@ async def ein_search(ctx, ein: int):
         elif item['formtype'] == 1: data[new_key]['Form'] = '990_EZ'
         elif item['formtype'] == 2: data[new_key]['Form'] = '990-PF'
         else: data[new_key]['Form'] = 'Unknown'
-        data[new_key]['Revenue'] = 'Unavailable'
-        data[new_key]['Expenses'] = 'Unavailable'
-        data[new_key]['Liabilities'] = 'Unavailable'
+        data[new_key]['Revenue'] = 'Unavailable - Check PDF'
+        data[new_key]['Expenses'] = 'Unavailable - Check PDF'
+        data[new_key]['Liabilities'] = 'Unavailable - Check PDF'
         data[new_key]['PDF'] = item['pdf_url'] if item['pdf_url'] else "Unavailable"
     return_string = ''
     for tax_prd in sorted(data, reverse=True):
         return_string += 'Tax Period: ' + datetime.strptime(str(tax_prd),'%Y%m').strftime('%m-%Y') + '\n'
         return_string += 'Form Type: ' + data[tax_prd]['Form'] + '\n'
-        return_string += 'Revenue: $' + str(data[tax_prd]['Revenue']) + '\n'
-        return_string += 'Expenses: $' + str(data[tax_prd]['Expenses']) + '\n'
-        return_string += 'Liabilities: $' + str(data[tax_prd]['Liabilities']) + '\n'
+        return_string += 'Revenue: ' + data[tax_prd]['Revenue'] + '\n'
+        return_string += 'Expenses: ' + data[tax_prd]['Expenses'] + '\n'
+        return_string += 'Liabilities: ' + data[tax_prd]['Liabilities'] + '\n'
         return_string += 'PDF link: ' + data[tax_prd]['PDF']
+    if len(return_string) > 2000:
+        return_string = return_string.split('\n')
+        return_string = "\n".join(return_string[:-6])
+        return_string = return_string + "\n-----TRUNCATED-----"
     await ctx.send(return_string)
 bot.run(TOKEN)
