@@ -1,3 +1,5 @@
+#! /usr/bin/python3
+
 import os
 import discord
 from dotenv import load_dotenv
@@ -74,10 +76,12 @@ async def ein_search(ctx, ein: int):
         return_string += 'Revenue: ' + data[tax_prd]['Revenue'] + '\n'
         return_string += 'Expenses: ' + data[tax_prd]['Expenses'] + '\n'
         return_string += 'Liabilities: ' + data[tax_prd]['Liabilities'] + '\n'
-        return_string += 'PDF link: ' + data[tax_prd]['PDF']
-    if len(return_string) > 2000:
+        return_string += 'PDF link: ' + data[tax_prd]['PDF'] +'\n'
+    records_omitted = 0
+    while len(return_string) > 2000:
         return_string = return_string.split('\n')
         return_string = "\n".join(return_string[:-6])
-        return_string = return_string + "\n-----TRUNCATED-----"
+        records_omitted += 1
     await ctx.send(return_string)
+    if records_omitted > 0: await ctx.send('There were {} ommitted records from this query.'.format(records_omitted))
 bot.run(TOKEN)
